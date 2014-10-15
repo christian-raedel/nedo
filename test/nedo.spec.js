@@ -128,7 +128,7 @@ describe('Nedo#load&save', function () {
     var model = null, filename = __dirname + '/test.json';
 
     beforeEach(function () {
-        model = new Nedo({name: 'nedo'});
+        model = new Nedo({name: 'nedo', filename: filename});
     });
 
     after(function () {
@@ -143,16 +143,9 @@ describe('Nedo#load&save', function () {
             {name: 'nedo'}
         ])
         .then(q.invoke(model, 'write'))
-        .then(function (idxs) {
-            expect(idxs).to.be.deep.equal([1, 2]);
-            model.config.setValue('filename', filename);
-            q.invoke(model, 'write')
-            .then(function () {
-                expect(fs.existsSync(filename)).to.be.true;
-                done();
-            })
-            .catch(done)
-            .done();
+        .then(function () {
+            expect(fs.existsSync(filename)).to.be.true;
+            done();
         })
         .catch(done)
         .done();
@@ -161,16 +154,9 @@ describe('Nedo#load&save', function () {
     it('should load documents', function (done) {
         model.load()
         .then(function (docs) {
-            expect(docs).to.be.deep.equal([]);
-            model.config.setValue('filename', filename);
-            q.invoke(model, 'load')
-            .then(function (docs) {
-                expect(docs[0]).to.have.property('name', 'inge');
-                expect(docs[1]).to.have.property('name', 'nedo');
-                done();
-            })
-            .catch(done)
-            .done();
+            expect(docs[0]).to.have.property('name', 'inge');
+            expect(docs[1]).to.have.property('name', 'nedo');
+            done();
         })
         .catch(done)
         .done();
