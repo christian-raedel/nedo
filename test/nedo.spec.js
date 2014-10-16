@@ -30,7 +30,7 @@ describe('Nedo#crud', function () {
 
         model.insert({name: 'inge'})
         .then(function (idx) {
-            expect(idx).to.be.above(-1);
+            expect(idx).to.be.equal(1);
             expect(spy).to.have.been.called.once;
             expect(model.data[0]).to.have.property('name', 'inge');
             done();
