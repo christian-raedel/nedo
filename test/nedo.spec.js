@@ -142,8 +142,10 @@ describe('Nedo#load&save', function () {
             {name: 'inge'},
             {name: 'nedo'}
         ])
-        .then(q.invoke(model, 'write'))
-        .then(function () {
+        .then(Nedo.prototype.write.bind(model))
+        .then(function (docs) {
+            expect(docs[0]).to.have.property('name', 'inge');
+            expect(docs[1]).to.have.property('name', 'nedo');
             expect(fs.existsSync(filename)).to.be.true;
             done();
         })
