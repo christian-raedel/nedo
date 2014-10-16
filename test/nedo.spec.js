@@ -3,7 +3,6 @@ var Nedo     = require('../index')
     , expect = chai.expect
     , spies  = require('chai-spies')
     , fs     = require('fs')
-    , q      = require('q')
     , _      = require('lodash');
 
 chai.use(spies);
