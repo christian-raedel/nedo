@@ -60,6 +60,17 @@ describe('Nedo#crud', function () {
         .done();
     });
 
+    it('should get all documents', function (done) {
+        model.get()
+        .then(function (docs) {
+            expect(docs).to.be.an('array');
+            expect(docs.length).to.be.equal(1);
+            done();
+        })
+        .catch(done)
+        .done();
+    });
+
     it('should update documents', function (done) {
         var self = this;
 
