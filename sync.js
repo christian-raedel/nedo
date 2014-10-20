@@ -51,8 +51,12 @@ Nedo.prototype.transform = function(fn, query, ctx) {
     }
 };
 
-Nedo.prototype.find = function(query, ctx) {
-    return _.filter(this.data, query, ctx);
+Nedo.prototype.find = function(query, chain, ctx) {
+    if (_.isBoolean(chain) && chain) {
+        return _.chain(this.data).filter(query, ctx);
+    } else {
+        return _.filter(this.data, query, chain);
+    }
 };
 
 Nedo.prototype.one = function(query, ctx) {
@@ -62,6 +66,8 @@ Nedo.prototype.one = function(query, ctx) {
 Nedo.prototype.get = function(idx) {
     if (_.isNumber(idx)) {
         return this.data[idx];
+    } else if (_.isBoolean(idx) && idx) {
+        return _.chain(this.data);
     } else {
         return this.data;
     }

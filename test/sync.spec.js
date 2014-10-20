@@ -76,6 +76,10 @@ describe('Nedo#find', function () {
         expect(nedo.find({name: 'nedo'})).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
     });
 
+    it('should find documents chained', function () {
+        expect(nedo.find({name: 'nedo'}, true).sortBy('name').value()).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
+    });
+
     it('should find a document', function () {
         expect(nedo.one({name: 'nedo'})).to.be.deep.equal({name: 'nedo', type: 'datastore'});
     });
@@ -86,6 +90,10 @@ describe('Nedo#find', function () {
 
     it('should get all documents', function () {
         expect(nedo.get()).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
+    });
+
+    it('should get all documents chained', function () {
+        expect(nedo.get(true).sortBy('name').value()).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
     });
 });
 
