@@ -22,7 +22,7 @@ Nedo.prototype.write = function() {
         fs.writeFileSync(filename, JSON.stringify(self.data));
         return self;
     } else {
-        throw new TypeError('Please configure filename to write to!');
+        throw new TypeError('Please configure valid filename to write to!');
     }
 };
 
@@ -30,12 +30,13 @@ Nedo.prototype.load = function() {
     var self = this
         , filename = self.config.getValue('filename');
 
-    if (_.isString(filename)) {
+    if (_.isString(filename) && fs.existsSync(filename)) {
         self.data = JSON.parse(fs.readFileSync(filename));
-        return self;
-    } else {
-        throw new TypeError('Please configure filename to load from!');
+    } else if (_.isFunction(self.onerror)) {
+        self.onerror(new TypeError('Please configure valid filename to load from!'));
     }
+
+    return self;
 };
 
 Nedo.prototype.insert = function(doc) {
