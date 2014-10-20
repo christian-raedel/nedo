@@ -1,4 +1,4 @@
-var Nedo     = require('../index')
+var Nedo     = require('../nedo')
     , chai   = require('chai')
     , expect = chai.expect
     , spies  = require('chai-spies')
