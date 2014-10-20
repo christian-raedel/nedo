@@ -55,7 +55,7 @@ Nedo.prototype.find = function(query, chain, ctx) {
     if (_.isBoolean(chain) && chain) {
         return _.chain(this.data).filter(query, ctx);
     } else {
-        return _.filter(this.data, query, chain);
+        return _.filter(this.data, query, ctx || chain);
     }
 };
 

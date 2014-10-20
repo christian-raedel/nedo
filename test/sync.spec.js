@@ -70,10 +70,18 @@ describe('Nedo#find', function () {
     beforeEach(function () {
         nedo = new Nedo({name: 'nedo'});
         nedo.insert({name: 'nedo', type: 'datastore'});
+        nedo.insert({name: 'nedb', type: 'nosql'});
+        nedo.insert({name: 'taffy', type: 'datastore'});
     });
 
     it('should find documents', function () {
         expect(nedo.find({name: 'nedo'})).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
+    });
+
+    it('should find documents by query function', function () {
+        expect(nedo.find(function (doc) {
+            return doc.name.indexOf('nedo') > -1;
+        })).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
     });
 
     it('should find documents chained', function () {
@@ -89,11 +97,19 @@ describe('Nedo#find', function () {
     });
 
     it('should get all documents', function () {
-        expect(nedo.get()).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
+        expect(nedo.get()).to.be.deep.equal([
+            {name: 'nedo', type: 'datastore'},
+            {name: 'nedb', type: 'nosql'},
+            {name: 'taffy', type: 'datastore'}
+        ]);
     });
 
     it('should get all documents chained', function () {
-        expect(nedo.get(true).sortBy('name').value()).to.be.deep.equal([{name: 'nedo', type: 'datastore'}]);
+        expect(nedo.get(true).sortBy('name').value()).to.be.deep.equal([
+            {name: 'nedb', type: 'nosql'},
+            {name: 'nedo', type: 'datastore'},
+            {name: 'taffy', type: 'datastore'}
+        ]);
     });
 });
 
