@@ -1,102 +1,140 @@
-var CConf     = require('node-cconf')
-    , debug   = require('debug')('nedo')
-    , shortid = require('shortid')
-    , fs      = require('fs')
-    , _       = require('lodash');
+var CConf          = require('node-cconf')
+    , EventEmitter = require('events').EventEmitter
+    , util         = require('util')
+    , fs           = require('fs')
+    , debug        = require('debug')('nedo')
+    , shortid      = require('shortid')
+    , _            = require('lodash');
 
 module.exports = Nedo;
 
 function Nedo(opts) {
-    var config = new CConf('nedo', ['name'])
-    .load(opts || {});
-
-    this.config = config;
+    EventEmitter.call(this);
+    this.config = new CConf('nedo', ['name']).load(opts || {});
+    this.middleware = [];
     this.data = [];
+    debug('new Nedo instance created:', this.config.config);
 }
 
-Nedo.prototype.write = function() {
-    var self = this
-        , filename = self.config.getValue('filename');
+util.inherits(Nedo, EventEmitter);
 
-    if (_.isString(filename)) {
-        fs.writeFileSync(filename, JSON.stringify(self.data));
-        return self;
+Nedo.prototype.use = function(fn) {
+    if (_.isFunction(fn)) {
+        this.middleware.push(fn);
     } else {
-        throw new TypeError('Please configure valid filename to write to!');
+        this.emit('error', new TypeError('Insert middleware must be a function!'));
     }
-};
-
-Nedo.prototype.load = function() {
-    var self = this
-        , filename = self.config.getValue('filename');
-
-    if (_.isString(filename) && fs.existsSync(filename)) {
-        self.data = JSON.parse(fs.readFileSync(filename));
-    } else if (_.isFunction(self.onerror)) {
-        self.onerror(new TypeError('Please configure valid filename to load from!'));
-    }
-
-    return self;
+    return this;
 };
 
 Nedo.prototype.insert = function(doc) {
-    var self = this;
-
     if (_.isArray(doc)) {
         return _.map(doc, function (doc) {
-            return Nedo.prototype.insert.call(self, doc);
-        });
-    } else if (_.isObject(doc)) {
-        doc['_id'] = shortid.generate();
-        if (_.isFunction(self.oninsert)) {
-            self.oninsert(doc);
-        }
-        return self.data.push(doc);
+            return this.insert(doc);
+        }, this);
     } else {
-        throw new TypeError('Document must be an object or an array of objects!');
+        _.reduce(this.middleware, function (prev, fn) {
+            return fn(prev);
+        }, doc, this);
+        var len = this.data.push(doc);
+        this.emit('insert', doc, len, this.data);
+        return doc;
     }
 };
-
-Nedo.prototype.get = function(query, ctx) {
-    var self = this;
-
-    if (_.isFunction(query)) {
-        return _.filter(self.data, query, ctx);
-    } else if (_.isNumber(query)) {
-        return self.data[query];
-    } else {
-        return self.data;
-    }
-};
-
-Nedo.prototype.find = Nedo.prototype.get;
 
 Nedo.prototype.transform = function(fn, query, ctx) {
-    var self = this;
-
     if (_.isFunction(fn)) {
-        return fn(self.data, query, ctx || self);
+        this.data = fn.call(ctx, this.data, query, ctx);
+        return this;
     } else {
-        throw new TypeError('Transform must be a function!');
+        this.emit('error', new TypeError('Transform must be a function!'));
+    }
+};
+
+Nedo.prototype.find = function(query, ctx) {
+    return _.filter(this.data, query, ctx);
+};
+
+Nedo.prototype.one = function(query, ctx) {
+    return this.find(query, ctx)[0];
+};
+
+Nedo.prototype.get = function(idx) {
+    if (_.isNumber(idx)) {
+        return this.data[idx];
+    } else {
+        return this.data;
     }
 };
 
 Nedo.prototype.update = function(query, ctx) {
-    var self = this;
-
-    return Nedo.prototype.transform.call(self, _.map, query, ctx);
+    if (_.isFunction(query)) {
+        _.forEach(this.data, function (doc) {
+            doc = query.call(ctx, doc);
+        }, ctx);
+        this.emit('update', this.data);
+        return this.data;
+    } else {
+        this.emit('error', new TypeError('Update query must be a function!'));
+    }
 };
 
 Nedo.prototype.delete = function(query, ctx) {
-    var self = this;
-
     if (_.isFunction(query)) {
-        self.data = _.filter(self.data, query, ctx);
-        return self.data;
-    } else if (_.isNumber(query)) {
-        self.data.splice(query, 1);
-        return self.data;
+        this.data = _.filter(this.data, function (doc) {
+            return !query.call(ctx, doc);
+        }, ctx);
+        this.emit('update', this.data);
+        return this.data;
     } else {
-        self.data = [];
+        this.emit('error', new TypeError('Delete query must be a function!'));
+    }
+};
+
+Nedo.prototype.clear = function() {
+    this.data = [];
+    return this;
+};
+
+Nedo.prototype.save = function() {
+    try {
+        var filename = this.config.getValue('filename');
+        if (_.isString(filename)) {
+            fs.writeFileSync(filename, JSON.stringify(this.data), 'utf8');
+            return this;
+        } else {
+            throw new TypeError('Please provide a valid filename to save to!');
+        }
+    } catch (err) {
+        this.emit('error', err);
+    }
+};
+
+Nedo.prototype.load = function() {
+    try {
+        var filename = this.config.getValue('filename');
+        if (_.isString(filename) && fs.existsSync(filename)) {
+            this.data = JSON.parse(fs.readFileSync(filename, 'utf8'));
+            return this;
+        } else {
+            throw new TypeError('Please provide a valid filename to load from!');
+        }
+    } catch (err) {
+        this.emit('error', err);
+    }
+};
+
+module.exports.use = {
+    shortid: function (doc) {
+        if (!doc.id) {
+            doc.id = shortid.generate();
+        }
+        return doc;
+    },
+    timestamp: function (doc) {
+        if (!doc.timestamp) {
+            doc.timestamp = new Date().getTime();
+        }
+        return doc;
     }
 };
